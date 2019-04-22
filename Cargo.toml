@@ -1,0 +1,22 @@
+[package]
+name = "webundle"
+version = "0.1.0"
+authors = ["Rajsekar Manokaran <rajsekar@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+swc_ecma_parser = { version = "0.10.0", features = ["verify"] }
+swc_common = { version = "0.3.0" }
+serde_json = { version = "1.0.39" }
+swc_ecma_ast = { version = "0.9.0" }
+swc_ecma_codegen = "0.7.0"
+sourcemap = "3.0.1"
+url = "1.7.2"
+failure = "0.1.5"
+failure_derive = "0.1.5"
+
+[patch.crates-io]
+swc_common = { path = "../swc/common" }
+swc_ecma_parser = { path = "../swc/ecmascript/parser" }
+swc_ecma_ast = { path = "../swc/ecmascript/ast" }
+swc_ecma_codegen = { path = "../swc/ecmascript/codegen" }
