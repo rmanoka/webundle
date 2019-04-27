@@ -4,8 +4,8 @@ use swc_common::{Fold, FoldWith};
 use super::Id;
 
 pub struct Compiled {
-    module: Module,
-    id: Id,
+    pub module: Module,
+    pub id: Id,
 }
 impl Compiled {
     pub fn new(id: Id, module: Module) -> Self {
@@ -23,9 +23,9 @@ impl Compiled {
 }
 
 pub struct Bundled {
-    deps: Vec<String>,
-    module: Module,
-    id: Id,
+    pub deps: Vec<String>,
+    pub module: Module,
+    pub id: Id,
 }
 
 #[derive(Default)]

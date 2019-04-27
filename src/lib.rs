@@ -1,6 +1,6 @@
 #![feature(specialization, existential_type)]
 
-pub mod seq;
+#[macro_use] pub mod seq;
 pub mod resolver;
 pub mod source;
 pub mod deps;

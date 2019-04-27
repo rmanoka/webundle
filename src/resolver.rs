@@ -1,6 +1,12 @@
 use std::path::{PathBuf, Path};
 use super::Seq;
 
+pub fn default() -> Box<dyn Context> {
+    Box::new(seq![
+        DotResolver,
+    ])
+}
+
 pub trait Context {
     fn resolve(&self, request: &mut Request) -> bool;
 }
@@ -10,15 +16,21 @@ impl<A: Context, B: Context> Context for Seq<A, B> {
             || self.1.resolve(request)
     }
 }
+impl<T: Context + ?Sized> Context for Box<T> {
+    fn resolve(&self, request: &mut Request) -> bool {
+        (**self).resolve(request)
+    }
+}
 
 use std::collections::HashMap;
 pub struct Request {
     pub raw: String,
-    pub path: PathBuf,
+    pub path: String,
     pub params: HashMap<String, String>,
+    pub ctx: PathBuf,
 }
 impl Request {
-    pub fn from_raw(raw: &str) -> Self {
+    pub fn new(raw: &str, ctx: &Path) -> Self {
 
         let splits: Vec<_> = raw.rsplitn(2, "?").collect();
 
@@ -33,39 +45,29 @@ impl Request {
                     .map(|(k, v)| (k.to_string(), v.to_string()))
             );
             splits[1]
-        }.into();
+        }.to_owned();
         let raw = raw.to_owned();
+        let ctx = ctx.to_owned();
 
-        Request {raw, path, params}
+        Request{ raw, path, params, ctx }
     }
 }
 
-pub struct DotResolver {
-    base: PathBuf,
-}
-impl DotResolver {
-    pub fn new(base: &Path) -> Self {
-        DotResolver { base: base.to_owned() }
-    }
-}
+pub struct DotResolver;
 impl Context for DotResolver {
 
     fn resolve(&self, request: &mut Request) -> bool {
         // Check if path starts with a `.` or `..`
-        use std::path::Component;
-        let dot = match request.path.components().nth(0) {
-            Some(d) => d,
-            None => return false,
-        };
+        let dot = request.path.chars().nth(0)
+            .expect("request empty");
+        if dot == '.' {
 
-        if (dot == Component::CurDir)
-            || (dot == Component::ParentDir) {
-                let can = self.base.join(&request.path).canonicalize();
-                if let Ok(p) = can {
-                    std::mem::replace(&mut request.path, p);
-                    return true;
-                }
+            let can = request.ctx.join(&request.path).canonicalize();
+            if let Ok(p) = can {
+                std::mem::replace(&mut request.path, p.to_str().unwrap().to_owned());
+                return true;
             }
+        }
 
         false
     }
@@ -85,17 +87,13 @@ impl Context for DirResolver {
     fn resolve(&self, request: &mut Request) -> bool {
         // Check if path starts with a normal component
         use std::path::Component;
-        let dot = match request.path.components().nth(0) {
-            Some(d) => d,
-            None => return false,
-        };
+        let first = request.path.chars().nth(0).expect("request empty");
+        if (first == '/') || (first == '.') { return false; }
 
-        if let Component::Normal(_) = dot {
-            let can = self.base.join(&request.path).canonicalize();
-            if let Ok(p) = can {
-                std::mem::replace(&mut request.path, p);
-                return true;
-            }
+        let path = self.base.join(&request.path).canonicalize();
+        if let Ok(p) = path {
+            std::mem::replace(&mut request.path, p.to_str().unwrap().to_owned());
+            return true;
         }
 
         false

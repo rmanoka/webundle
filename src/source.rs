@@ -1,5 +1,5 @@
 use failure::ResultExt;
-use swc_common::{CM, FileName, SourceMap,
+use swc_common::{FileName, SourceMap,
                  errors::{ColorConfig, Handler}};
 use std::sync::Arc;
 
@@ -17,7 +17,7 @@ pub struct Source {
     content: String,
 }
 impl Source {
-    pub fn from_request(id: Request) -> Result<Self> {
+    pub fn new(id: Request) -> Result<Self> {
         let content = std::fs::read_to_string(&id.path)
             .context(ErrorKind::FileRead)?;
         Ok(Source{ id, content })
@@ -32,8 +32,7 @@ impl Source {
         let session = Session { handler: &handler };
 
         let fm = cm.new_source_file(
-            FileName::Custom(self.id.path.to_string_lossy()
-                             .to_string()),
+            FileName::Custom(self.id.path.clone()),
             self.content);
 
         let mut parser = Parser::new(
